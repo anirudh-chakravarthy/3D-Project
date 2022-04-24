@@ -21,6 +21,10 @@ from mmdetection.mmdet.models.utils.smpl.viz import draw_skeleton, J24_TO_J14
 import random
 import cv2
 import torch
+
+import glob
+import torchvision.transforms.functional as F
+
 from .transforms import coco17_to_superset
 from .h36m import H36MDataset
 
@@ -49,6 +53,8 @@ class CommonDataset(H36MDataset):
                  **kwargs,
                  ):
         self.filter_kpts = filter_kpts
+        self.flow_prefix = kwargs.pop("flow_prefix", None)
+        self.with_flow = kwargs.pop("with_flow", False)
         super(CommonDataset, self).__init__(**kwargs)
 
     def load_annotations(self, ann_file):
@@ -56,13 +62,19 @@ class CommonDataset(H36MDataset):
             img_infos = pickle.load(f)
         return img_infos
 
+    # TODO: come back to this
+    def load_flow_annotations(self, flow_dir):
+        flow_dict = {}
+        for flow_file in glob.glob(osp.join(flow_dir, '*', '*.pt')):
+            flow = np.load(flow_file)
+        return img_infos
+
     def get_ann_info(self, idx):
         float_list = ['bboxes', 'kpts3d', 'kpts2d', 'pose', 'shape', 'trans']
         int_list = ['labels', 'has_smpl']
         img_info = deepcopy(self.img_infos[idx])
         num_persons = img_info['bboxes'].shape[0] if 'bboxes' in img_info else 1
-        # import ipdb
-        # ipdb.set_trace()
+
         for k in float_list:
             if k in img_info:
                 img_info[k] = img_info[k].astype(np.float32).copy()
@@ -76,7 +88,7 @@ class CommonDataset(H36MDataset):
 
         # For densepose
         if self.with_dp:
-            # TODO: Handel matter of mask later.
+            # TODO: Handle matter of mask later.
             # TODO: Add weight for overlap points, which is a little bit tricky as we do not have the information of ROI here.
             dp_dict = {
                 'dp_I': np.zeros((num_persons, 196), dtype=INT_DTYPE),
@@ -95,3 +107,18 @@ class CommonDataset(H36MDataset):
                             dp_dict[k][i, :dp_num_pts] = dp_ann[k]
             img_info.update(dp_dict)
         return img_info
+
+    def prepare_train_img(self, idx):
+        data = super(CommonDataset, self).prepare_train_img(idx)
+        
+        img_info = deepcopy(self.img_infos[idx])
+        h, w = img_info['height'], img_info['width']
+
+        if self.with_flow:
+            flow = torch.load(
+                osp.join(self.flow_prefix, img_info['file_name'].replace(
+                    'jpg', 'pt')))
+            flow = F.interpolate(flow, size=(h, w), mode='bilinear')
+            data['flow'] = DC(to_tensor(flow), stack=True)
+
+        return data

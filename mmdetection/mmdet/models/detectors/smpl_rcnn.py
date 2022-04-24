@@ -149,6 +149,7 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
                       dp_num_pts=None,
                       scene=None,
                       log_depth=None,
+                      flow=None,
                       **kwargs):
         if self.debugging:
             import ipdb
@@ -156,6 +157,11 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
         x = self.extract_feat(img)
 
         losses = dict()
+        
+        # TODO: use flow to augment features after feature extraction
+        # TODO: not using a flow head, if we do replace with self.with_flow
+        if flow is not None:
+            pass
 
         # RPN forward and loss
         if self.with_rpn:
