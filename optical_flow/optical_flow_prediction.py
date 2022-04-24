@@ -1,5 +1,6 @@
 import os
 from PIL import Image
+import numpy as np
 import torch
 
 from torchvision.models.optical_flow import raft_large
@@ -13,7 +14,7 @@ def load_sorted_image_frames(
     r"""Load images and sort them in respective frames.
     
     Keyword Arguments:
-    folder_path -- Path of .jgg images
+    folder_path -- Path of .jpg images
 
     Returns:
     image_names_prev -- Names for the Previous Frames
@@ -80,9 +81,12 @@ def save_optical_flows(
         current_name = image_names_current[i].split(".")[0]
         current_save_path = os.path.join(
             save_path, 
-            f"{prev_name}_{current_name}.pt"
+            f"{prev_name}.npy"
+            # f"{prev_name}.pt"
         )
-        torch.save(optical_flow, current_save_path)
+        optical_flow = optical_flow.detach().cpu().numpy()
+        np.save(current_save_path, optical_flow)
+        # torch.save(optical_flow, current_save_path)
 
 
 def main():

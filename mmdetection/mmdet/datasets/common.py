@@ -53,20 +53,12 @@ class CommonDataset(H36MDataset):
                  **kwargs,
                  ):
         self.filter_kpts = filter_kpts
-        self.flow_prefix = kwargs.pop("flow_prefix", None)
         self.with_flow = kwargs.pop("with_flow", False)
         super(CommonDataset, self).__init__(**kwargs)
 
     def load_annotations(self, ann_file):
         with open(ann_file, 'rb') as f:
             img_infos = pickle.load(f)
-        return img_infos
-
-    # TODO: come back to this
-    def load_flow_annotations(self, flow_dir):
-        flow_dict = {}
-        for flow_file in glob.glob(osp.join(flow_dir, '*', '*.pt')):
-            flow = np.load(flow_file)
         return img_infos
 
     def get_ann_info(self, idx):
@@ -110,14 +102,16 @@ class CommonDataset(H36MDataset):
 
     def prepare_train_img(self, idx):
         data = super(CommonDataset, self).prepare_train_img(idx)
-        
+
         img_info = deepcopy(self.img_infos[idx])
         h, w = img_info['height'], img_info['width']
 
         if self.with_flow:
-            flow = torch.load(
-                osp.join(self.flow_prefix, img_info['file_name'].replace(
-                    'jpg', 'pt')))
+            import pdb; pdb.set_trace()
+            flow_file = img_info['filename'].replace('images', 'optical_flow')
+            flow = np.load(
+                osp.join(self.img_prefix, flow_file.replace('jpg', 'npy')))
+            flow = torch.from_numpy(flow)
             flow = F.interpolate(flow, size=(h, w), mode='bilinear')
             data['flow'] = DC(to_tensor(flow), stack=True)
 
