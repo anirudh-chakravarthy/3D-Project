@@ -1,5 +1,6 @@
 import argparse
-from optical_flow.preprocess import OpticalFlowTransformation
+from preprocess import OpticalFlowTransformation
+import os
 
 
 def parse_arguments():
@@ -22,6 +23,19 @@ def parse_arguments():
     )
     args = parser.parse_args()
     return args
+
+
+def construct_directory(path):
+    r"""Construct Directory at the Given Path if it does not exist.
+    
+    Keyword Arguments:
+    path -- Directory Path to Create.
+
+    Returns: None
+    """
+    isDirectory = os.path.isdir(path) 
+    if not isDirectory:
+        os.mkdir(path)
 
 
 # For Every [Previous, Current] image pair, compute optical flow 

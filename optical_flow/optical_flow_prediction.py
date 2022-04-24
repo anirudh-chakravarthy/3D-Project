@@ -3,7 +3,7 @@ from PIL import Image
 import torch
 
 from torchvision.models.optical_flow import raft_large
-from optical_flow.utils import compute_optical_flow, parse_arguments
+from utils import compute_optical_flow, construct_directory, parse_arguments
 
 
 # Load and Sort Images By Folder Name
@@ -91,21 +91,34 @@ def main():
     """
     args = parse_arguments()
 
-    # Get Images
     folder_path = args.images_folder_path
-    image_names_prev, prev_images, image_names_current, current_images = load_sorted_image_frames(
-        folder_path
-    )
-
-    # Compute Optical Flows
     save_path = args.optical_flow_save_path
-    save_optical_flows(
-        image_names_prev, 
-        prev_images, 
-        image_names_current, 
-        current_images,
-        save_path
-    )
+
+    folders = os.listdir(folder_path)
+    
+    # Work on All The Folders inside `folder_path`.
+    for folder in folders: 
+
+        # Get Images.
+        current_folder_path = os.path.join(folder_path, folder)
+        print(f"Currently Computing Optical Flows on Images from Folder={folder}")
+        image_names_prev, prev_images, image_names_current, current_images = load_sorted_image_frames(
+            current_folder_path
+        )
+
+        # Construct Directory with Same Name in `save_path` location.
+        current_save_path = os.path.join(save_path, folder)
+        construct_directory(current_save_path)
+
+        # Compute and Save Optical Flows.
+        print(f"Currently Saving Optical Flows From Folder={folder}")
+        save_optical_flows(
+            image_names_prev, 
+            prev_images, 
+            image_names_current, 
+            current_images,
+            current_save_path
+        )
 
 
 if __name__ == "__main__":
