@@ -120,8 +120,11 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
             if not self.share_roi_extractor:
                 self.smpl_roi_extractor.init_weights()
 
-    def extract_feat(self, img):
-        x = self.backbone(img)
+    def extract_feat(self, img, flow=None):
+        if flow is None:
+            x = self.backbone(img)
+        else:
+            x = self.backbone(img, flow)
         if self.with_neck:
             x = self.neck(x)
         return x
@@ -154,15 +157,14 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
         if self.debugging:
             import ipdb
             ipdb.set_trace()
-        x = self.extract_feat(img)
+        x = self.extract_feat(img, flow)
 
         losses = dict()
 
         # TODO: use flow to augment features after feature extraction
         # TODO: not using a flow head, if we do replace with self.with_flow
-        if flow is not None:
-            import pdb; pdb.set_trace()
-            pass
+        # if flow is not None:
+        #     pass
 
         # RPN forward and loss
         if self.with_rpn:
@@ -280,6 +282,7 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
             pos_inds = torch.cat(pos_inds)
 
             bboxes_confidence = cls_score[pos_inds, 1]
+            import pdb; pdb.set_trace()
             pred_bboxes, kpts2d_target, kpts3d_target, poses_target, shapes_target, trans_target, has_smpl_target, gt_vertices, idxs_in_batch, pose_idx = self.smpl_head.get_target(
                 sampling_results, gt_kpts2d, gt_kpts3d, gt_poses, gt_shapes, gt_trans, has_smpl,
                 self.train_cfg.rcnn)

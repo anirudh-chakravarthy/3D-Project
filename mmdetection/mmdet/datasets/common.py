@@ -23,7 +23,7 @@ import cv2
 import torch
 
 import glob
-import torchvision.transforms.functional as F
+import torch.nn.functional as F
 
 from .transforms import coco17_to_superset
 from .h36m import H36MDataset
@@ -62,6 +62,7 @@ class CommonDataset(H36MDataset):
         return img_infos
 
     def get_ann_info(self, idx):
+        import pdb; pdb.set_trace()
         float_list = ['bboxes', 'kpts3d', 'kpts2d', 'pose', 'shape', 'trans']
         int_list = ['labels', 'has_smpl']
         img_info = deepcopy(self.img_infos[idx])
@@ -104,15 +105,14 @@ class CommonDataset(H36MDataset):
         data = super(CommonDataset, self).prepare_train_img(idx)
 
         img_info = deepcopy(self.img_infos[idx])
-        h, w = img_info['height'], img_info['width']
+        h, w = data['img'].data.shape[-2:]
 
         if self.with_flow:
-            import pdb; pdb.set_trace()
             flow_file = img_info['filename'].replace('images', 'optical_flow')
             flow = np.load(
                 osp.join(self.img_prefix, flow_file.replace('jpg', 'npy')))
             flow = torch.from_numpy(flow)
-            flow = F.interpolate(flow, size=(h, w), mode='bilinear')
+            flow = F.interpolate(flow[None], size=(h, w), mode='bilinear').squeeze(0)
             data['flow'] = DC(to_tensor(flow), stack=True)
 
         return data
