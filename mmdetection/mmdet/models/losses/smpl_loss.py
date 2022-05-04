@@ -329,7 +329,7 @@ class SMPLLoss(nn.Module):
         conf = gt_keypoints_3d[:, :, -1].unsqueeze(-1).clone()
         gt_keypoints_3d = gt_keypoints_3d[:, :, :-1].clone()
         pred_keypoints_3d = pred_keypoints_3d[..., -24:, :]
-        if len(gt_keypoints_3d) > 0:
+        if len(gt_keypoints_3d) > 0 and not (gt_keypoints_3d == 0).all():
             gt_pelvis = (gt_keypoints_3d[:, 2, :] + gt_keypoints_3d[:, 3, :]) / 2
             gt_keypoints_3d = gt_keypoints_3d - gt_pelvis[:, None, :]
             pred_pelvis = (pred_keypoints_3d[:, 2, :] + pred_keypoints_3d[:, 3, :]) / 2

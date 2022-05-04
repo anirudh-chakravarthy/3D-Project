@@ -1,4 +1,4 @@
-name: multiperson
+name: multiperson-tmp
 channels:
   - pytorch
   - defaults

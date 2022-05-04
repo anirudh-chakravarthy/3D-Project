@@ -62,7 +62,6 @@ class CommonDataset(H36MDataset):
         return img_infos
 
     def get_ann_info(self, idx):
-        import pdb; pdb.set_trace()
         float_list = ['bboxes', 'kpts3d', 'kpts2d', 'pose', 'shape', 'trans']
         int_list = ['labels', 'has_smpl']
         img_info = deepcopy(self.img_infos[idx])
@@ -109,10 +108,14 @@ class CommonDataset(H36MDataset):
 
         if self.with_flow:
             flow_file = img_info['filename'].replace('images', 'optical_flow')
-            flow = np.load(
-                osp.join(self.img_prefix, flow_file.replace('jpg', 'npy')))
-            flow = torch.from_numpy(flow)
-            flow = F.interpolate(flow[None], size=(h, w), mode='bilinear').squeeze(0)
-            data['flow'] = DC(to_tensor(flow), stack=True)
+            file_name = flow_file.split('/')
+            file_idx = int(file_name[-1][:-4])
+            if file_idx > 0:
+                prev_idx = '{0:06d}'.format(file_idx-1) + '.npy'
+                prev_file_name = '/'.join(file_name[:-1]) + '/' + prev_idx
+                flow = np.load(osp.join(self.img_prefix, prev_file_name))
+                flow = torch.from_numpy(flow)
+                flow = F.interpolate(flow[None], size=(h, w), mode='bilinear').squeeze(0)
+                data['flow'] = DC(to_tensor(flow), stack=True)
 
         return data

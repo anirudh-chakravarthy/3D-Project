@@ -39,20 +39,36 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
                  ):
         super(SMPLRCNN, self).__init__()
         self.backbone = builder.build_backbone(backbone)
+        for param in self.backbone.parameters():
+                param.requires_grad = False
 
         if neck is not None:
             self.neck = builder.build_neck(neck)
 
+            for param in self.neck.parameters():
+                param.requires_grad = False
+
         if shared_head is not None:
             self.shared_head = builder.build_shared_head(shared_head)
 
+            for param in self.shared_head.parameters():
+                param.requires_grad = False
+
         if rpn_head is not None:
             self.rpn_head = builder.build_head(rpn_head)
+
+            for param in self.rpn_head.parameters():
+                param.requires_grad = False
 
         if bbox_head is not None:
             self.bbox_roi_extractor = builder.build_roi_extractor(
                 bbox_roi_extractor)
             self.bbox_head = builder.build_head(bbox_head)
+
+            for param in self.bbox_roi_extractor.parameters():
+                param.requires_grad = False
+            for param in self.bbox_head.parameters():
+                param.requires_grad = False
 
         if smpl_head is not None:
             if smpl_roi_extractor is not None:
@@ -68,6 +84,11 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
             self.gt_pos_only = gt_pos_only
             self.bbox_feat = hasattr(self.smpl_head, 'bbox_feat') and self.smpl_head.bbox_feat
 
+            for param in self.smpl_roi_extractor.parameters():
+                param.requires_grad = False
+            for param in self.smpl_head.parameters():
+                param.requires_grad = False
+
         if kpts_head is not None:
             if kpts_roi_extractor is not None:
                 self.kpts_roi_extractor = builder.build_roi_extractor(
@@ -77,6 +98,11 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 self.share_roi_extractor = True
                 self.kpts_roi_extractor = self.bbox_roi_extractor
             self.kpts_head = builder.build_head(kpts_head)
+
+            for param in self.kpts_roi_extractor.parameters():
+                param.requires_grad = False
+            for param in self.kpts_head.parameters():
+                param.requires_grad = False
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -157,6 +183,14 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
         if self.debugging:
             import ipdb
             ipdb.set_trace()
+
+        trainable_layers = [
+            self.backbone.conv1, self.backbone.norm1, self.backbone.conv1_flow, self.backbone.norm1_flow,
+            self.smpl_head.smpl, self.smpl_head.dec
+        ]
+        for layer in trainable_layers:
+            for param in layer.parameters():
+                param.requires_grad = True
         x = self.extract_feat(img, flow)
 
         losses = dict()
@@ -282,7 +316,6 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
             pos_inds = torch.cat(pos_inds)
 
             bboxes_confidence = cls_score[pos_inds, 1]
-            import pdb; pdb.set_trace()
             pred_bboxes, kpts2d_target, kpts3d_target, poses_target, shapes_target, trans_target, has_smpl_target, gt_vertices, idxs_in_batch, pose_idx = self.smpl_head.get_target(
                 sampling_results, gt_kpts2d, gt_kpts3d, gt_poses, gt_shapes, gt_trans, has_smpl,
                 self.train_cfg.rcnn)

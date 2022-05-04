@@ -141,7 +141,7 @@ common_train_cfg = dict(
     with_mask=False,
     with_crowd=False,
     with_label=True,
-    with_kpts2d=False,
+    with_kpts2d=True,
     with_kpts3d=False,
     with_pose=True,
     with_shape=True,
@@ -163,7 +163,7 @@ common_val_cfg = dict(
     with_mask=False,
     with_crowd=False,
     with_label=True,
-    with_kpts2d=False,
+    with_kpts2d=True,
     with_kpts3d=False,
     with_pose=True,
     with_shape=True,
@@ -281,7 +281,7 @@ datasets = [
 ]
 data = dict(
     imgs_per_gpu=4,
-    workers_per_gpu=0,#4,
+    workers_per_gpu=4,
     train=common_train_cfg,
     val=common_val_cfg,
 )
@@ -302,11 +302,11 @@ lr_config = SequenceLrUpdaterHook(
 checkpoint_config = dict(interval=1)
 # yapf:disable
 # runtime settings
-total_epochs = 1
+total_epochs = 5
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/flow'
-load_from = '/project_data/ramanan/achakrav/misc/3D/project/multiperson/mmdetection/data/checkpoint.pt'
+load_from = 'data/checkpoint.pt'
 resume_from = None # osp.join(work_dir, 'latest.pth')
 workflow = [('train', 1)]
 
@@ -314,11 +314,11 @@ log_config = dict(
     interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
-#         dict(type=SMPLBoard, log_dir=work_dir, bboxes_only=False, K_SMALLEST=1,
-#              detail_mode=False, FOCAL_LENGTH=FOCAL_LENGTH, )
+        dict(type=SMPLBoard, log_dir=work_dir, bboxes_only=False, K_SMALLEST=1,
+             detail_mode=False, FOCAL_LENGTH=FOCAL_LENGTH, )
     ])
 evaluation = dict(interval=1)
 # yapf:enable
 fuse = True
-time_limit = 1 * 3000  # In sceonds
-log_grad = True
+time_limit = 1 * 3000  # In seconds
+log_grad = False
