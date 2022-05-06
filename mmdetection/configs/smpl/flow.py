@@ -11,12 +11,15 @@ model = dict(
     type='SMPLRCNN',
     pretrained='modelzoo://resnet50',
     backbone=dict(
-        type='ResNetFlow',#'ResNet',
+        type='ResNetFlow', # 'ResNet',
         depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        style='pytorch'),
+        style='pytorch',
+        fuse='add', # 'cat',
+        fuse_input='warp', # 'flow',
+    ),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
@@ -147,6 +150,7 @@ common_train_cfg = dict(
     with_shape=True,
     with_trans=True,
     with_flow=True,
+    with_warp=model['backbone']['fuse_input'] == 'warp',
     # max_samples=1024
     square_bbox=square_bbox,
     # mosh_path='data/h36m/extras/h36m_single_train_openpose.npz',
@@ -169,6 +173,7 @@ common_val_cfg = dict(
     with_shape=True,
     with_trans=True,
     with_flow=True,
+    with_warp=model['backbone']['fuse_input'] == 'warp',
     max_samples=64,
     square_bbox=square_bbox,
     # mosh_path='data/h36m/extras/h36m_single_train_openpose.npz',
@@ -302,10 +307,10 @@ lr_config = SequenceLrUpdaterHook(
 checkpoint_config = dict(interval=1)
 # yapf:disable
 # runtime settings
-total_epochs = 5
+total_epochs = 20 if model['backbone']['fuse'] == 'cat' else 5
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/flow'
+work_dir = './work_dirs/{}_{}'.format(model['backbone']['fuse'], model['backbone']['fuse_input'])
 load_from = 'data/checkpoint.pt'
 resume_from = None # osp.join(work_dir, 'latest.pth')
 workflow = [('train', 1)]

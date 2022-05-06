@@ -24,7 +24,10 @@ def load_sorted_image_frames(
     """
     # List All Images and Sort.
     image_names = os.listdir(folder_path)
-    image_names = sorted(image_names)
+    image_names = sorted([
+        image for image in image_names 
+        if image.endswith('.jpg') or image.endswith('.png')
+    ])
 
     # Load All Images.
     image_names_prev = image_names[:-1]
@@ -36,12 +39,14 @@ def load_sorted_image_frames(
         # Get Previous Frames.
         prev_image_path = os.path.join(folder_path, prev_image_name)
         prev_image = Image.open(prev_image_path)
-        prev_images.append(prev_image)
+        prev_images.append(prev_image.copy())
+        prev_image.close()
 
         # Get Current Frames.
         current_image_path = os.path.join(folder_path, current_image_name)
         current_image = Image.open(current_image_path)
-        current_images.append(current_image)
+        current_images.append(current_image.copy())
+        current_image.close()
 
     return image_names_prev, prev_images, image_names_current, current_images
 
@@ -102,6 +107,8 @@ def main():
     
     # Work on All The Folders inside `folder_path`.
     for folder in folders: 
+        if folder in ('rcnn', 'optical_flow'):
+            continue
 
         # Get Images.
         current_folder_path = os.path.join(folder_path, folder)

@@ -54,6 +54,7 @@ class CommonDataset(H36MDataset):
                  ):
         self.filter_kpts = filter_kpts
         self.with_flow = kwargs.pop("with_flow", False)
+        self.with_warp = kwargs.pop("with_warp", False)
         super(CommonDataset, self).__init__(**kwargs)
 
     def load_annotations(self, ann_file):
@@ -107,15 +108,43 @@ class CommonDataset(H36MDataset):
         h, w = data['img'].data.shape[-2:]
 
         if self.with_flow:
-            flow_file = img_info['filename'].replace('images', 'optical_flow')
-            file_name = flow_file.split('/')
-            file_idx = int(file_name[-1][:-4])
+            if 'mupots-3d' in img_info['filename']:
+                flow_file = img_info['filename'].replace('mupots-3d', 'mupots-3d/optical_flow')
+                file_name = flow_file.split('/')
+                file_idx = int(file_name[-1].replace('_', '.').split('.')[1])
+                if file_idx > 0:
+                    prev_idx = 'img_{0:06d}'.format(file_idx-1) + '.npy'
+                    prev_file_name = '/'.join(file_name[:-1]) + '/' + prev_idx
+            # posetrack 2018 dataset
+            else:
+                flow_file = img_info['filename'].replace('images', 'optical_flow')
+                file_name = flow_file.split('/')
+                file_idx = int(file_name[-1][:-4])
+                if file_idx > 0:
+                    prev_idx = '{0:06d}'.format(file_idx-1) + '.npy'
+                    prev_file_name = '/'.join(file_name[:-1]) + '/' + prev_idx
+
             if file_idx > 0:
-                prev_idx = '{0:06d}'.format(file_idx-1) + '.npy'
-                prev_file_name = '/'.join(file_name[:-1]) + '/' + prev_idx
                 flow = np.load(osp.join(self.img_prefix, prev_file_name))
                 flow = torch.from_numpy(flow)
                 flow = F.interpolate(flow[None], size=(h, w), mode='bilinear').squeeze(0)
-                data['flow'] = DC(to_tensor(flow), stack=True)
-
+                if self.with_warp:
+                    image_warped = self.warp_image(data['img'].data.numpy(), flow.numpy())
+                    data['flow'] = DC(to_tensor(image_warped), stack=True)
+                else:
+                    data['flow'] = DC(to_tensor(flow), stack=True)
         return data
+    
+    def warp_image(self, image, flow):
+        h, w = flow.shape[1:]
+        aw = np.arange(w)
+        ah = np.arange(h) # (2, H, W)
+
+        image = image.transpose(1, 2, 0) # (H, W, 3)
+        flow = flow.transpose(1, 2, 0) # (H, W, 2)
+
+        flow[:, :, 0] += aw
+        flow[:, :, 1] += ah[:,np.newaxis]
+        image_warped = cv2.remap(image, flow, None, cv2.INTER_LINEAR)
+        image_warped = image_warped.transpose(2, 0, 1) # (3, H, W)
+        return image_warped

@@ -186,19 +186,20 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         trainable_layers = [
             self.backbone.conv1, self.backbone.norm1, self.backbone.conv1_flow, self.backbone.norm1_flow,
-            self.smpl_head.smpl, self.smpl_head.dec
+            self.backbone.layer1[0], self.smpl_head.smpl, self.smpl_head.dec
         ]
+        if hasattr(self.backbone, 'conv1_fuse'):
+            trainable_layers.extend([self.backbone.conv1_fuse, self.backbone.norm1_fuse])
+
+        if self.backbone.fuse_method == 'cat' and self.backbone.fuse_input == 'warp':
+            self.backbone.conv1_flow.weight.data.copy_(self.backbone.conv1.weight.data)
+
         for layer in trainable_layers:
             for param in layer.parameters():
                 param.requires_grad = True
         x = self.extract_feat(img, flow)
 
         losses = dict()
-
-        # TODO: use flow to augment features after feature extraction
-        # TODO: not using a flow head, if we do replace with self.with_flow
-        # if flow is not None:
-        #     pass
 
         # RPN forward and loss
         if self.with_rpn:
