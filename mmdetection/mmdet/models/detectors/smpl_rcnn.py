@@ -39,20 +39,36 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
                  ):
         super(SMPLRCNN, self).__init__()
         self.backbone = builder.build_backbone(backbone)
+        for param in self.backbone.parameters():
+                param.requires_grad = False
 
         if neck is not None:
             self.neck = builder.build_neck(neck)
 
+            for param in self.neck.parameters():
+                param.requires_grad = False
+
         if shared_head is not None:
             self.shared_head = builder.build_shared_head(shared_head)
 
+            for param in self.shared_head.parameters():
+                param.requires_grad = False
+
         if rpn_head is not None:
             self.rpn_head = builder.build_head(rpn_head)
+
+            for param in self.rpn_head.parameters():
+                param.requires_grad = False
 
         if bbox_head is not None:
             self.bbox_roi_extractor = builder.build_roi_extractor(
                 bbox_roi_extractor)
             self.bbox_head = builder.build_head(bbox_head)
+
+            for param in self.bbox_roi_extractor.parameters():
+                param.requires_grad = False
+            for param in self.bbox_head.parameters():
+                param.requires_grad = False
 
         if smpl_head is not None:
             if smpl_roi_extractor is not None:
@@ -68,6 +84,11 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
             self.gt_pos_only = gt_pos_only
             self.bbox_feat = hasattr(self.smpl_head, 'bbox_feat') and self.smpl_head.bbox_feat
 
+            for param in self.smpl_roi_extractor.parameters():
+                param.requires_grad = False
+            for param in self.smpl_head.parameters():
+                param.requires_grad = False
+
         if kpts_head is not None:
             if kpts_roi_extractor is not None:
                 self.kpts_roi_extractor = builder.build_roi_extractor(
@@ -77,6 +98,11 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 self.share_roi_extractor = True
                 self.kpts_roi_extractor = self.bbox_roi_extractor
             self.kpts_head = builder.build_head(kpts_head)
+
+            for param in self.kpts_roi_extractor.parameters():
+                param.requires_grad = False
+            for param in self.kpts_head.parameters():
+                param.requires_grad = False
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -120,8 +146,11 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
             if not self.share_roi_extractor:
                 self.smpl_roi_extractor.init_weights()
 
-    def extract_feat(self, img):
-        x = self.backbone(img)
+    def extract_feat(self, img, flow=None):
+        if flow is None:
+            x = self.backbone(img)
+        else:
+            x = self.backbone(img, flow)
         if self.with_neck:
             x = self.neck(x)
         return x
@@ -149,11 +178,26 @@ class SMPLRCNN(BaseDetector, RPNTestMixin, BBoxTestMixin,
                       dp_num_pts=None,
                       scene=None,
                       log_depth=None,
+                      flow=None,
                       **kwargs):
         if self.debugging:
             import ipdb
             ipdb.set_trace()
-        x = self.extract_feat(img)
+
+        trainable_layers = [
+            self.backbone.conv1, self.backbone.norm1, self.backbone.conv1_flow, self.backbone.norm1_flow,
+            self.backbone.layer1[0], self.smpl_head.smpl, self.smpl_head.dec
+        ]
+        if hasattr(self.backbone, 'conv1_fuse'):
+            trainable_layers.extend([self.backbone.conv1_fuse, self.backbone.norm1_fuse])
+
+        if self.backbone.fuse_method == 'cat' and self.backbone.fuse_input == 'warp':
+            self.backbone.conv1_flow.weight.data.copy_(self.backbone.conv1.weight.data)
+
+        for layer in trainable_layers:
+            for param in layer.parameters():
+                param.requires_grad = True
+        x = self.extract_feat(img, flow)
 
         losses = dict()
 

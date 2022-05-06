@@ -148,7 +148,7 @@ common_train_cfg = dict(
     with_trans=True,
     # max_samples=1024
     square_bbox=square_bbox,
-    mosh_path='data/h36m/extras/h36m_single_train_openpose.npz',
+    # mosh_path='data/h36m/extras/h36m_single_train_openpose.npz',
     with_nr=WITH_NR,
     use_poly=True,
     # rot_factor=30,
@@ -169,54 +169,54 @@ common_val_cfg = dict(
     with_trans=True,
     max_samples=64,
     square_bbox=square_bbox,
-    mosh_path='data/h36m/extras/h36m_single_train_openpose.npz',
+    # mosh_path='data/h36m/extras/h36m_single_train_openpose.npz',
     with_nr=WITH_NR,
     use_poly=True,
 )
 
-h36m_dataset_type = 'H36MDataset'
-h36m_data_root = 'data/h36m/'
-coco_dataset_type = 'COCOKeypoints'
-coco_data_root = 'data/coco/'
+# h36m_dataset_type = 'H36MDataset'
+# h36m_data_root = 'data/h36m/'
+# coco_dataset_type = 'COCOKeypoints'
+# coco_data_root = 'data/coco/'
 common_dataset = 'CommonDataset'
 pose_track_root = 'data/posetrack2018/'
-mpii_root = 'data/mpii/'
-mpi_inf_3dhp_root = 'data/mpi_inf_3dhp/'
-panoptic_root = 'data/Panoptic/'
+# mpii_root = 'data/mpii/'
+# mpi_inf_3dhp_root = 'data/mpi_inf_3dhp/'
+# panoptic_root = 'data/Panoptic/'
 
 datasets = [
-    dict(
-        train=dict(
-            type=h36m_dataset_type,
-            ann_file=h36m_data_root + 'extras/rcnn/h36m_train.pkl',
-            img_prefix=h36m_data_root + 'images/',
-            sample_weight=0.6,
-            **common_train_cfg
-        ),
-        val=dict(
-            type=h36m_dataset_type,
-            ann_file=h36m_data_root + 'extras/rcnn/h36m_val.pkl',
-            img_prefix=h36m_data_root + 'images/',
-            sample_weight=0.6,
-            **common_val_cfg
-        ),
-    ),
-    dict(
-        train=dict(
-            type=common_dataset,
-            ann_file=coco_data_root + 'annotations/train_densepose_2014_scene.pkl',
-            img_prefix=coco_data_root + 'train2014/',
-            sample_weight=0.3,
-            **common_train_cfg
-        ),
-        val=dict(
-            type=common_dataset,
-            ann_file=coco_data_root + 'annotations/val_densepose_2014_scene.pkl',
-            img_prefix=coco_data_root + 'val2014/',
-            sample_weight=0.3,
-            **common_val_cfg
-        ),
-    ),
+    # dict(
+    #     train=dict(
+    #         type=h36m_dataset_type,
+    #         ann_file=h36m_data_root + 'extras/rcnn/h36m_train.pkl',
+    #         img_prefix=h36m_data_root + 'images/',
+    #         sample_weight=0.6,
+    #         **common_train_cfg
+    #     ),
+    #     val=dict(
+    #         type=h36m_dataset_type,
+    #         ann_file=h36m_data_root + 'extras/rcnn/h36m_val.pkl',
+    #         img_prefix=h36m_data_root + 'images/',
+    #         sample_weight=0.6,
+    #         **common_val_cfg
+    #     ),
+    # ),
+    # dict(
+    #     train=dict(
+    #         type=common_dataset,
+    #         ann_file=coco_data_root + 'annotations/train_densepose_2014_scene.pkl',
+    #         img_prefix=coco_data_root + 'train2014/',
+    #         sample_weight=0.3,
+    #         **common_train_cfg
+    #     ),
+    #     val=dict(
+    #         type=common_dataset,
+    #         ann_file=coco_data_root + 'annotations/val_densepose_2014_scene.pkl',
+    #         img_prefix=coco_data_root + 'val2014/',
+    #         sample_weight=0.3,
+    #         **common_val_cfg
+    #     ),
+    # ),
     dict(
         train=dict(
             type=common_dataset,
@@ -233,49 +233,49 @@ datasets = [
             **common_val_cfg
         ),
     ),
-    dict(
-        train=dict(
-            type=common_dataset,
-            ann_file=mpii_root + 'rcnn/train.pkl',
-            img_prefix=mpii_root + 'images/',
-            sample_weight=0.3,
-            **common_train_cfg
-        ),
-        val=dict(
-            type=common_dataset,
-            ann_file=mpii_root + 'rcnn/val.pkl',
-            img_prefix=mpii_root + 'images/',
-            sample_weight=0.3,
-            **common_val_cfg
-        ),
-    ),
-    dict(
-        train=dict(
-            type=common_dataset,
-            ann_file=mpi_inf_3dhp_root + 'rcnn/train.pkl',
-            img_prefix=mpi_inf_3dhp_root,
-            sample_weight=0.1,
-            **common_train_cfg
-        ),
-        val=dict(
-            type=common_dataset,
-            ann_file=mpi_inf_3dhp_root + 'rcnn/val.pkl',
-            img_prefix=mpi_inf_3dhp_root,
-            sample_weight=0.1,
-            ignore_3d=True,
-            **common_val_cfg
-        ),
-    ),
-    dict(
-        val=dict(
-            type=common_dataset,
-            ann_file=panoptic_root + 'processed/annotations/160422_ultimatum1.pkl',
-            img_prefix=panoptic_root,
-            sample_weight=0.6,
-            ignore_3d=True,
-            **common_val_cfg
-        ),
-    ),
+    # dict(
+    #     train=dict(
+    #         type=common_dataset,
+    #         ann_file=mpii_root + 'rcnn/train.pkl',
+    #         img_prefix=mpii_root + 'images/',
+    #         sample_weight=0.3,
+    #         **common_train_cfg
+    #     ),
+    #     val=dict(
+    #         type=common_dataset,
+    #         ann_file=mpii_root + 'rcnn/val.pkl',
+    #         img_prefix=mpii_root + 'images/',
+    #         sample_weight=0.3,
+    #         **common_val_cfg
+    #     ),
+    # ),
+    # dict(
+    #     train=dict(
+    #         type=common_dataset,
+    #         ann_file=mpi_inf_3dhp_root + 'rcnn/train.pkl',
+    #         img_prefix=mpi_inf_3dhp_root,
+    #         sample_weight=0.1,
+    #         **common_train_cfg
+    #     ),
+    #     val=dict(
+    #         type=common_dataset,
+    #         ann_file=mpi_inf_3dhp_root + 'rcnn/val.pkl',
+    #         img_prefix=mpi_inf_3dhp_root,
+    #         sample_weight=0.1,
+    #         ignore_3d=True,
+    #         **common_val_cfg
+    #     ),
+    # ),
+    # dict(
+    #     val=dict(
+    #         type=common_dataset,
+    #         ann_file=panoptic_root + 'processed/annotations/160422_ultimatum1.pkl',
+    #         img_prefix=panoptic_root,
+    #         sample_weight=0.6,
+    #         ignore_3d=True,
+    #         **common_val_cfg
+    #     ),
+    # ),
 ]
 data = dict(
     imgs_per_gpu=4,

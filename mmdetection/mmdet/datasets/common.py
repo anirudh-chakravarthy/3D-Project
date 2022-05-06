@@ -21,6 +21,10 @@ from mmdetection.mmdet.models.utils.smpl.viz import draw_skeleton, J24_TO_J14
 import random
 import cv2
 import torch
+
+import glob
+import torch.nn.functional as F
+
 from .transforms import coco17_to_superset
 from .h36m import H36MDataset
 
@@ -49,6 +53,8 @@ class CommonDataset(H36MDataset):
                  **kwargs,
                  ):
         self.filter_kpts = filter_kpts
+        self.with_flow = kwargs.pop("with_flow", False)
+        self.with_warp = kwargs.pop("with_warp", False)
         super(CommonDataset, self).__init__(**kwargs)
 
     def load_annotations(self, ann_file):
@@ -61,8 +67,7 @@ class CommonDataset(H36MDataset):
         int_list = ['labels', 'has_smpl']
         img_info = deepcopy(self.img_infos[idx])
         num_persons = img_info['bboxes'].shape[0] if 'bboxes' in img_info else 1
-        # import ipdb
-        # ipdb.set_trace()
+
         for k in float_list:
             if k in img_info:
                 img_info[k] = img_info[k].astype(np.float32).copy()
@@ -76,7 +81,7 @@ class CommonDataset(H36MDataset):
 
         # For densepose
         if self.with_dp:
-            # TODO: Handel matter of mask later.
+            # TODO: Handle matter of mask later.
             # TODO: Add weight for overlap points, which is a little bit tricky as we do not have the information of ROI here.
             dp_dict = {
                 'dp_I': np.zeros((num_persons, 196), dtype=INT_DTYPE),
@@ -95,3 +100,51 @@ class CommonDataset(H36MDataset):
                             dp_dict[k][i, :dp_num_pts] = dp_ann[k]
             img_info.update(dp_dict)
         return img_info
+
+    def prepare_train_img(self, idx):
+        data = super(CommonDataset, self).prepare_train_img(idx)
+
+        img_info = deepcopy(self.img_infos[idx])
+        h, w = data['img'].data.shape[-2:]
+
+        if self.with_flow:
+            if 'mupots-3d' in img_info['filename']:
+                flow_file = img_info['filename'].replace('mupots-3d', 'mupots-3d/optical_flow')
+                file_name = flow_file.split('/')
+                file_idx = int(file_name[-1].replace('_', '.').split('.')[1])
+                if file_idx > 0:
+                    prev_idx = 'img_{0:06d}'.format(file_idx-1) + '.npy'
+                    prev_file_name = '/'.join(file_name[:-1]) + '/' + prev_idx
+            # posetrack 2018 dataset
+            else:
+                flow_file = img_info['filename'].replace('images', 'optical_flow')
+                file_name = flow_file.split('/')
+                file_idx = int(file_name[-1][:-4])
+                if file_idx > 0:
+                    prev_idx = '{0:06d}'.format(file_idx-1) + '.npy'
+                    prev_file_name = '/'.join(file_name[:-1]) + '/' + prev_idx
+
+            if file_idx > 0:
+                flow = np.load(osp.join(self.img_prefix, prev_file_name))
+                flow = torch.from_numpy(flow)
+                flow = F.interpolate(flow[None], size=(h, w), mode='bilinear').squeeze(0)
+                if self.with_warp:
+                    image_warped = self.warp_image(data['img'].data.numpy(), flow.numpy())
+                    data['flow'] = DC(to_tensor(image_warped), stack=True)
+                else:
+                    data['flow'] = DC(to_tensor(flow), stack=True)
+        return data
+    
+    def warp_image(self, image, flow):
+        h, w = flow.shape[1:]
+        aw = np.arange(w)
+        ah = np.arange(h) # (2, H, W)
+
+        image = image.transpose(1, 2, 0) # (H, W, 3)
+        flow = flow.transpose(1, 2, 0) # (H, W, 2)
+
+        flow[:, :, 0] += aw
+        flow[:, :, 1] += ah[:,np.newaxis]
+        image_warped = cv2.remap(image, flow, None, cv2.INTER_LINEAR)
+        image_warped = image_warped.transpose(2, 0, 1) # (3, H, W)
+        return image_warped

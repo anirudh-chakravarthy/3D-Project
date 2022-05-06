@@ -23,8 +23,14 @@ def get_smpl_target_single(self, pos_proposals, pos_assigned_gt_inds, gt_kpts2d,
             # w = np.maximum(x2 - x1 + 1, 1)
             # h = np.maximum(y2 - y1 + 1, 1)
             bboxs_proposal.append(bbox)
-            kpts2d_target.append(gt_kpts2d[idx])
-            kpts3d_target.append(gt_kpts3d[idx])
+            if gt_kpts2d is None:
+                kpts2d_target.append(torch.zeros(24, 3, device=bbox.device))
+            else:
+                kpts2d_target.append(gt_kpts2d[idx])
+            if gt_kpts3d is None:
+                kpts3d_target.append(torch.zeros(24, 4, device=bbox.device))
+            else:
+                kpts3d_target.append(gt_kpts3d[idx])
             poses_target.append(gt_poses[idx])
             shapes_target.append(gt_shapes[idx])
             trans_target.append(gt_trans[idx])
@@ -35,7 +41,7 @@ def get_smpl_target_single(self, pos_proposals, pos_assigned_gt_inds, gt_kpts2d,
     else:
         pass
 
-    # To avoid duplicate declartion
+    # To avoid duplicate declaration
     return tuple(map(
         lambda x: torch.stack(x).float().to(pos_proposals.device),
         [bboxs_proposal, kpts2d_target, kpts3d_target, poses_target, shapes_target, trans_target, has_smpl_target,

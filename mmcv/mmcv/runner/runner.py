@@ -365,9 +365,9 @@ class Runner(object):
         self.logger.info('workflow: %s, max: %d epochs', workflow, max_epochs)
         self.call_hook('before_run')
 
-        # while self.epoch < max_epochs:
+        while self.epoch < max_epochs:
         # Modify to cope with the requirements of clusters
-        if self.epoch < max_epochs:
+        # if self.epoch < max_epochs:
             for i, flow in enumerate(workflow):
                 mode, epochs = flow
                 if isinstance(mode, str):  # self.train()

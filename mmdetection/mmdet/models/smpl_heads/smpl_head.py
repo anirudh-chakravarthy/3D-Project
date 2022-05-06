@@ -143,6 +143,10 @@ class SMPLHead(nn.Module):
             res.pos_assigned_gt_inds for res in sampling_results
         ]
         cfg_list = [rcnn_train_cfg for _ in range(len(pos_proposals))]
+        if gt_kpts2d is None:
+            gt_kpts2d = [None] * len(pos_assigned_gt_inds)
+        if gt_kpts3d is None:
+            gt_kpts3d = [None] * len(pos_assigned_gt_inds)
         the_map = map(
             get_smpl_target_single, [self] * len(pos_assigned_gt_inds), pos_proposals, pos_assigned_gt_inds, gt_kpts2d,
             gt_kpts3d, gt_poses, gt_shapes,

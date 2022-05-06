@@ -1,5 +1,6 @@
 import os
 from PIL import Image
+import numpy as np
 import torch
 
 from torchvision.models.optical_flow import raft_large
@@ -13,7 +14,7 @@ def load_sorted_image_frames(
     r"""Load images and sort them in respective frames.
     
     Keyword Arguments:
-    folder_path -- Path of .jgg images
+    folder_path -- Path of .jpg images
 
     Returns:
     image_names_prev -- Names for the Previous Frames
@@ -23,7 +24,10 @@ def load_sorted_image_frames(
     """
     # List All Images and Sort.
     image_names = os.listdir(folder_path)
-    image_names = sorted(image_names)
+    image_names = sorted([
+        image for image in image_names 
+        if image.endswith('.jpg') or image.endswith('.png')
+    ])
 
     # Load All Images.
     image_names_prev = image_names[:-1]
@@ -35,12 +39,14 @@ def load_sorted_image_frames(
         # Get Previous Frames.
         prev_image_path = os.path.join(folder_path, prev_image_name)
         prev_image = Image.open(prev_image_path)
-        prev_images.append(prev_image)
+        prev_images.append(prev_image.copy())
+        prev_image.close()
 
         # Get Current Frames.
         current_image_path = os.path.join(folder_path, current_image_name)
         current_image = Image.open(current_image_path)
-        current_images.append(current_image)
+        current_images.append(current_image.copy())
+        current_image.close()
 
     return image_names_prev, prev_images, image_names_current, current_images
 
@@ -80,9 +86,12 @@ def save_optical_flows(
         current_name = image_names_current[i].split(".")[0]
         current_save_path = os.path.join(
             save_path, 
-            f"{prev_name}_{current_name}.pt"
+            f"{prev_name}.npy"
+            # f"{prev_name}.pt"
         )
-        torch.save(optical_flow, current_save_path)
+        optical_flow = optical_flow.detach().cpu().numpy()
+        np.save(current_save_path, optical_flow)
+        # torch.save(optical_flow, current_save_path)
 
 
 def main():
@@ -98,6 +107,8 @@ def main():
     
     # Work on All The Folders inside `folder_path`.
     for folder in folders: 
+        if folder in ('rcnn', 'optical_flow'):
+            continue
 
         # Get Images.
         current_folder_path = os.path.join(folder_path, folder)
