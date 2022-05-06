@@ -1,6 +1,7 @@
 # Constrained Humanification: Improving Multi-Person Reconstruction Using Temporal Constraints
 Code repository for [CMU 16-889: Learning for 3D Vision](https://learning3d.github.io/) Course Project.
 
+Project Report: [pdf](assets/16889_Final_Project_Report.pdf)
 
 ![teaser](assets/teaser.png)
 
